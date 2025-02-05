@@ -1,40 +1,140 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# Polygon Manager
+
+A Next.js application for managing and visualizing geographical polygons on an interactive map. Built with React, TypeScript, and Leaflet.
+
+## Features
+
+- Interactive map visualization using Leaflet
+- Draw, edit, and delete polygons
+- Search and filter polygons
+- Import/Export GeoJSON data
+- Responsive design with dark mode support
+- Real-time polygon area calculation
+- Color customization for polygons
+
+## Tech Stack
+
+- **Framework**: Next.js 15.1
+- **Language**: TypeScript
+- **State Management**: Redux Toolkit
+- **Styling**: SCSS Modules
+- **Map Library**: Leaflet with React-Leaflet
+- **Form Handling**: React Hook Form
+- **Data Format**: GeoJSON
+
+## Project Structure
+
+src/
+├── components/
+│ ├── common/
+│ │ ├── Header.tsx 
+│ │ └── Header.module.scss
+│ ├── MapComponent.tsx 
+│ └── MapComponent.module.scss
+│  
+├── pages/
+│ ├── app.tsx 
+│ ├── document.tsx 
+│ ├── index.tsx 
+│ └── polygons/ 
+├── store/
+│ ├── polygonSlice.ts # Redux slice for polygon state
+│ └── store.ts # Redux store configuration
+└── styles/
+├── globals.scss # Global styles
+└── Polygons.module.scss # Polygon page styles
 
 ## Getting Started
 
-First, run the development server:
+1. Clone the repository
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+# or
+
+```bash
+yarn install
+```
+
+# or
+
+```bash
+pnpm install
+```
+
+3. Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) with your browser
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+## Features in Detail
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+### Map Component
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+- Draw polygons with intersection prevention
+- Automatic area calculation
+- Polygon center markers with tooltips
+- User location detection
+- Custom styling options
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Polygon Management
 
-## Learn More
+- CRUD operations for polygons
+- Real-time search functionality
+- Color customization with hex input
+- Responsive grid layout
+- Form validation
 
-To learn more about Next.js, take a look at the following resources:
+### Data Management
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+- GeoJSON import/export
+- Automatic data persistence
+- Unique ID generation for polygons
+- Area calculation in square kilometers
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Styling
 
-## Deploy on Vercel
+The project uses SCSS modules for component-specific styling with:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Responsive design
+- Dark mode support
+- Custom color schemes
+- Flexible grid layouts
+- Interactive animations
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+## State Management
+
+Redux Toolkit is used for state management with:
+
+- Centralized polygon state
+- Action creators for CRUD operations
+- TypeScript type safety
+- Efficient updates with ImmerJS
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is open source and available under the MIT License.
+
+## Deployment
+
+The application can be easily deployed on Vercel:
+
+1. Push your code to GitHub
+2. Import your repository on Vercel
+3. Deploy with environment variables if needed
+
+For more details on deployment, check the [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying).
