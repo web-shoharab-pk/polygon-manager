@@ -238,8 +238,8 @@ const MapComponent = () => {
 
   const filteredPolygons = polygons.filter(
     (polygon) =>
-      polygon.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      polygon.id.toLowerCase().includes(searchTerm.toLowerCase())
+      polygon?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      polygon?.id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
