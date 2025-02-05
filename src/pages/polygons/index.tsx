@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
-import { deletePolygon, updatePolygon } from "../../store/polygonSlice";
+import { deletePolygon, updatePolygon } from "../../store/slices/polygonSlice";
 import { RootState } from "../../store/store";
 import styles from "./../../styles/Polygons.module.scss";
 

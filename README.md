@@ -4,18 +4,17 @@ A Next.js application for managing and visualizing geographical polygons on an i
 
 ## Features
 
-- Interactive map visualization using Leaflet
-- Draw, edit, and delete polygons
-- Search and filter polygons
-- Import/Export GeoJSON data
-- Responsive design with dark mode support
-- Real-time polygon area calculation
-- Color customization for polygons
+- 🗺️ Interactive map visualization using Leaflet
+- ✏️ Draw, edit, and delete polygons with intersection prevention
+- 🔍 Advanced search and filtering capabilities
+- 💾 Import/Export GeoJSON data
+- 📐 Real-time polygon area calculation
+- 🎨 Custom polygon styling and color management
 
 ## Tech Stack
 
 - **Framework**: Next.js 15.1
-- **Language**: TypeScript
+- **Language**: TypeScript 5.0+
 - **State Management**: Redux Toolkit
 - **Styling**: SCSS Modules
 - **Map Library**: Leaflet with React-Leaflet
@@ -24,58 +23,68 @@ A Next.js application for managing and visualizing geographical polygons on an i
 
 ## Project Structure
 
+```
 src/
 ├── components/
 │ ├── common/
-│ │ ├── Header.tsx 
+│ │ ├── Header.tsx
 │ │ └── Header.module.scss
-│ ├── MapComponent.tsx 
+│ ├── MapComponent.tsx
 │ └── MapComponent.module.scss
-│  
+│
 ├── pages/
-│ ├── app.tsx 
-│ ├── document.tsx 
-│ ├── index.tsx 
-│ └── polygons/ 
+│   ├── _app.tsx
+│   ├── _document.tsx
+│   ├── index.tsx
+│   └── polygons/
 ├── store/
-│ ├── polygonSlice.ts # Redux slice for polygon state
-│ └── store.ts # Redux store configuration
+│   ├── slices/
+│   │   └── polygonSlice.ts
+│   └── store.ts
 └── styles/
-├── globals.scss # Global styles
-└── Polygons.module.scss # Polygon page styles
+    ├── globals.scss # Global styles
+    └── Polygons.module.scss # Polygon page styles
+```
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js 18.0 or later
+- npm, yarn, or pnpm
+
+### Installation
+
 1. Clone the repository
-2. Install dependencies:
+
+```bash
+git clone https://github.com/web-shoharab-pk/polygon-manager
+cd polygon-manager
+```
+
+2. Install dependencies
 
 ```bash
 npm install
-```
-
 # or
-
-```bash
 yarn install
-```
-
 # or
-
-```bash
 pnpm install
 ```
 
-3. Start the development server:
+3. Start the development server
 
 ```bash
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
 ```
 
 4. Open [http://localhost:3000](http://localhost:3000) with your browser
 
-## Features in Detail
-
-### Map Component
+## Core Features
 
 - Draw polygons with intersection prevention
 - Automatic area calculation
@@ -93,14 +102,7 @@ npm run dev
 
 ### Data Management
 
-- GeoJSON import/export
-- Automatic data persistence
-- Unique ID generation for polygons
-- Area calculation in square kilometers
-
-## Styling
-
-The project uses SCSS modules for component-specific styling with:
+### User Interface
 
 - Responsive design
 - Dark mode support
@@ -127,7 +129,7 @@ Redux Toolkit is used for state management with:
 
 ## License
 
-This project is open source and available under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Deployment
 
@@ -137,4 +139,6 @@ The application can be easily deployed on Vercel:
 2. Import your repository on Vercel
 3. Deploy with environment variables if needed
 
-For more details on deployment, check the [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying).
+- [Leaflet](https://leafletjs.com/) for the mapping functionality
+- [Next.js](https://nextjs.org/) team for the amazing framework
+- All our contributors and supporters

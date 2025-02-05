@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import polygonReducer from "./polygonSlice";
+import polygonReducer from "./slices/polygonSlice";
 
 export const store = configureStore({
   reducer: {

@@ -14,7 +14,11 @@ import {
 import { EditControl } from "react-leaflet-draw";
 import { useDispatch, useSelector } from "react-redux";
 import { v4 as uuidv4 } from "uuid";
-import { addPolygon, deletePolygon, setPolygons } from "../store/polygonSlice";
+import {
+  addPolygon,
+  deletePolygon,
+  setPolygons,
+} from "../store/slices/polygonSlice";
 import { RootState } from "../store/store";
 import styles from "./MapComponent.module.scss";
 

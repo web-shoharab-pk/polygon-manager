@@ -1,4 +1,4 @@
-import { setPolygons } from "@/store/polygonSlice";
+import { setPolygons } from "@/store/slices/polygonSlice";
 import Link from "next/link";
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
