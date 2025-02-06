@@ -23,14 +23,29 @@ const PolygonsPage = () => {
     reset,
     formState: { errors },
     setValue,
-    watch,
-  } = useForm<EditFormInputs>();
-  console.log("values", watch("fillColor"));
+  } = useForm<EditFormInputs>({
+    mode: "onChange", // Enable real-time validation
+    defaultValues: {
+      name: "",
+      fillColor: "#FF0000",
+      borderColor: "#000000",
+    },
+  });
+
   const onSubmit = (data: EditFormInputs) => {
     if (!selectedPolygon) return;
 
     const polygon = polygons.find((p) => p.id === selectedPolygon);
     if (polygon) {
+      // Validate color formats
+      const colorRegex = /^#[0-9A-F]{6}$/i;
+      if (
+        !colorRegex.test(data.fillColor) ||
+        !colorRegex.test(data.borderColor)
+      ) {
+        return;
+      }
+
       dispatch(
         updatePolygon({
           ...polygon,
@@ -116,6 +131,7 @@ const PolygonsPage = () => {
                           id="fillColor"
                           defaultValue={polygon.fillColor}
                           {...register("fillColor", {
+                            required: "Fill color is required",
                             pattern: {
                               value: /^#[0-9A-F]{6}$/i,
                               message: "Invalid color format",
@@ -123,7 +139,7 @@ const PolygonsPage = () => {
                           })}
                           className={styles.colorPicker}
                           onChange={(e) =>
-                            setValue("fillColor", e.target.value)
+                            setValue("fillColor", e.target.value.toUpperCase())
                           }
                         />
                         <input
@@ -133,13 +149,14 @@ const PolygonsPage = () => {
                             errors.fillColor ? styles.inputError : ""
                           }`}
                           {...register("fillColor", {
+                            required: "Fill color is required",
                             pattern: {
                               value: /^#[0-9A-F]{6}$/i,
                               message: "Invalid color format",
                             },
                           })}
                           onChange={(e) =>
-                            setValue("fillColor", e.target.value)
+                            setValue("fillColor", e.target.value.toUpperCase())
                           }
                         />
                       </div>
@@ -159,6 +176,7 @@ const PolygonsPage = () => {
                           id="borderColor"
                           defaultValue={polygon.borderColor}
                           {...register("borderColor", {
+                            required: "Border color is required",
                             pattern: {
                               value: /^#[0-9A-F]{6}$/i,
                               message: "Invalid color format",
@@ -166,7 +184,10 @@ const PolygonsPage = () => {
                           })}
                           className={styles.colorPicker}
                           onChange={(e) =>
-                            setValue("borderColor", e.target.value)
+                            setValue(
+                              "borderColor",
+                              e.target.value.toUpperCase()
+                            )
                           }
                         />
                         <input
@@ -176,13 +197,17 @@ const PolygonsPage = () => {
                             errors.borderColor ? styles.inputError : ""
                           }`}
                           {...register("borderColor", {
+                            required: "Border color is required",
                             pattern: {
                               value: /^#[0-9A-F]{6}$/i,
                               message: "Invalid color format",
                             },
                           })}
                           onChange={(e) =>
-                            setValue("borderColor", e.target.value)
+                            setValue(
+                              "borderColor",
+                              e.target.value.toUpperCase()
+                            )
                           }
                         />
                       </div>

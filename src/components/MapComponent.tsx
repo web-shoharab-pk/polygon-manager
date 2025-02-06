@@ -21,6 +21,7 @@ import {
 import { RootState } from "../store/store";
 import styles from "./../styles/components/MapComponent.module.scss";
 import LocationFinder from "./LocationFinder";
+import { checkPolygonIntersection } from "@/utils/utils";
 
 const MapComponent = () => {
   const dispatch = useDispatch();
@@ -33,23 +34,40 @@ const MapComponent = () => {
 
   useEffect(() => {
     // Get user's location when component mounts
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation([
-            position.coords.latitude,
-            position.coords.longitude,
-          ]);
-        },
-        (error) => {
-          setError("Unable to get location: " + error.message);
+    navigator.permissions
+      .query({ name: "geolocation" })
+      .then((permissionStatus) => {
+        if (
+          permissionStatus.state === "granted" ||
+          permissionStatus.state === "prompt"
+        ) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              setUserLocation([
+                position.coords.latitude,
+                position.coords.longitude,
+              ]);
+            },
+            (error) => {
+              setError("Unable to get location: " + error.message);
+              setTimeout(() => setError(null), 3000);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 5000,
+              maximumAge: 0,
+            }
+          );
+        } else {
+          setError("Location permission denied");
           setTimeout(() => setError(null), 3000);
         }
-      );
-    } else {
-      setError("Geolocation is not supported by your browser");
-      setTimeout(() => setError(null), 3000);
-    }
+      })
+      .catch((err) => {
+        console.error("Error checking location permissions:", err);
+        setError("Error checking location permissions");
+        setTimeout(() => setError(null), 3000);
+      });
   }, []);
 
   const calculatePolygonCenter = (coordinates: number[][]) => {
@@ -88,82 +106,9 @@ const MapComponent = () => {
     return areaInKm2.toFixed(4);
   };
 
-  // Improved polygon intersection check using line segment intersection
-  const doLineSegmentsIntersect = (
-    p1: number[],
-    p2: number[],
-    p3: number[],
-    p4: number[]
-  ) => {
-    const ccw = (A: number[], B: number[], C: number[]) => {
-      return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0]);
-    };
-    return (
-      ccw(p1, p3, p4) !== ccw(p2, p3, p4) && ccw(p1, p2, p3) !== ccw(p1, p2, p4)
-    );
-  };
+ 
 
-  const checkPolygonIntersection = (
-    newPolygon: number[][],
-    existingPolygons: any[]
-  ) => {
-    // Check each existing polygon
-    for (const polygon of existingPolygons) {
-      const existingCoords = polygon.coordinates;
-
-      // Check each line segment of new polygon against each line segment of existing polygon
-      for (let i = 0; i < newPolygon.length; i++) {
-        const i2 = (i + 1) % newPolygon.length;
-        const line1Start = newPolygon[i];
-        const line1End = newPolygon[i2];
-
-        for (let j = 0; j < existingCoords.length; j++) {
-          const j2 = (j + 1) % existingCoords.length;
-          const line2Start = existingCoords[j];
-          const line2End = existingCoords[j2];
-
-          if (
-            doLineSegmentsIntersect(line1Start, line1End, line2Start, line2End)
-          ) {
-            return true;
-          }
-        }
-      }
-
-      // Check if one polygon is completely inside the other
-      const isPointInPolygon = (point: number[], polygon: number[][]) => {
-        let inside = false;
-        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-          const xi = polygon[i][0],
-            yi = polygon[i][1];
-          const xj = polygon[j][0],
-            yj = polygon[j][1];
-          const intersect =
-            yi > point[1] !== yj > point[1] &&
-            point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi;
-          if (intersect) inside = !inside;
-        }
-        return inside;
-      };
-
-      // Check if any point of new polygon is inside existing polygon
-      if (newPolygon.some((point) => isPointInPolygon(point, existingCoords))) {
-        return true;
-      }
-
-      // Check if any point of existing polygon is inside new polygon
-      if (
-        existingCoords.some((point: number[]) =>
-          isPointInPolygon(point, newPolygon)
-        )
-      ) {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  const _onCreate = (e: any) => {
+  const handleCreate = (e: any) => {
     const { layerType, layer } = e;
     if (layerType === "polygon") {
       const latlngs = layer
@@ -189,7 +134,7 @@ const MapComponent = () => {
     }
   };
 
-  const _onEdited = (e: any) => {
+  const handleEdit = (e: any) => {
     const { layers } = e;
 
     layers.eachLayer((layer: any) => {
@@ -223,7 +168,7 @@ const MapComponent = () => {
     });
   };
 
-  const _onDeleted = (e: any) => {
+  const handleDelete = (e: any) => {
     try {
       const { layers } = e;
 
@@ -234,49 +179,68 @@ const MapComponent = () => {
         }
       });
     } catch (error) {
-      console.error("Error in _onDeleted:", error);
+      console.error("Error in handleDelete:", error);
       setError("Failed to delete polygon");
       setTimeout(() => setError(null), 3000);
     }
   };
 
   const exportPolygons = () => {
-    const dataStr = JSON.stringify(polygons, null, 2);
-    const dataBlob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    link.download = "polygons.json";
-    link.href = url;
-    link.click();
+    try {
+      const dataStr = JSON.stringify(polygons, null, 2);
+      const dataBlob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement("a");
+      link.download = "polygons.json";
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url); // Clean up
+    } catch (err) {
+      console.error("Error in exportPolygons:", err);
+      setError("Failed to export polygons");
+      setTimeout(() => setError(null), 3000);
+    }
   };
 
   const importPolygons = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const importedPolygons = JSON.parse(e.target?.result as string);
-          const polygons = importedPolygons?.features.map((feature: any) => ({
-            id: feature.properties.FID,
-            coordinates: feature.geometry.coordinates[0].map((coord: any) => [
-              coord[1],
-              coord[0],
-            ]),
-            fillColor: "#FF0000",
-            borderColor: "#000000",
-            name: feature.properties.Name,
-            area: feature.properties.LFlaeche,
-          }));
-          dispatch(setPolygons(polygons));
-        } catch (err: any) {
-          setError("Error importing file: Invalid format" + err?.message);
-          setTimeout(() => setError(null), 3000);
-        }
-      };
+    if (!file) return;
 
-      reader.readAsText(file);
+    // Check file size (e.g., limit to 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("File is too large. Maximum size is 5MB");
+      setTimeout(() => setError(null), 3000);
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importedPolygons = JSON.parse(e.target?.result as string);
+        const polygons = importedPolygons?.features.map((feature: any) => ({
+          id: feature.properties.FID,
+          coordinates: feature.geometry.coordinates[0].map((coord: any) => [
+            coord[1],
+            coord[0],
+          ]),
+          fillColor: "#FF0000",
+          borderColor: "#000000",
+          name: feature.properties.Name,
+          area: feature.properties.LFlaeche,
+        }));
+        dispatch(setPolygons(polygons));
+      } catch (err: any) {
+        setError("Error importing file: Invalid format" + err?.message);
+        setTimeout(() => setError(null), 3000);
+      }
+    };
+
+    reader.onerror = () => {
+      setError("Error reading file");
+      setTimeout(() => setError(null), 3000);
+    };
+
+    reader.readAsText(file);
   };
 
   const filteredPolygons = polygons.filter(
@@ -286,7 +250,7 @@ const MapComponent = () => {
   );
 
   return (
-    <div style={{ position: "relative", height: "100vh" }}>
+    <div>
       <div className={styles.searchBar}>
         <input
           type="text"
@@ -335,14 +299,14 @@ const MapComponent = () => {
       <MapContainer
         center={userLocation || [48.351, 12.545]}
         zoom={14}
-        style={{ height: "100vh", width: "100%" }}
+        className={styles.mapContainer}
       >
         <FeatureGroup>
           <EditControl
             position="topright"
-            onCreated={_onCreate}
-            onDeleted={_onDeleted}
-            onEdited={_onEdited}
+            onCreated={handleCreate}
+            onDeleted={handleDelete}
+            onEdited={handleEdit}
             draw={{
               rectangle: false,
               polyline: false,
