@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { deletePolygon, updatePolygon } from "../../store/slices/polygonSlice";
 import { RootState } from "../../store/store";
-import styles from "./../../styles/Polygons.module.scss";
+import styles from "./../../styles/pages/Polygons.module.scss";
 
 type EditFormInputs = {
   name: string;
@@ -14,7 +14,7 @@ type EditFormInputs = {
 const PolygonsPage = () => {
   const polygons = useSelector((state: RootState) => state.polygon.polygons);
   const dispatch = useDispatch();
-  const [selectedPolygon, setSelectedPolygon] = useState<string | null>(null);
+  const [selectedPolygon, setSelectedPolygon] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   const {
@@ -23,8 +23,9 @@ const PolygonsPage = () => {
     reset,
     formState: { errors },
     setValue,
+    watch,
   } = useForm<EditFormInputs>();
-
+  console.log("values", watch("fillColor"));
   const onSubmit = (data: EditFormInputs) => {
     if (!selectedPolygon) return;
 
@@ -51,7 +52,7 @@ const PolygonsPage = () => {
   const filteredPolygons = polygons.filter(
     (polygon) =>
       polygon.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      polygon.id.toLowerCase().includes(searchTerm.toLowerCase())
+      polygon.id?.toString().toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -121,6 +122,9 @@ const PolygonsPage = () => {
                             },
                           })}
                           className={styles.colorPicker}
+                          onChange={(e) =>
+                            setValue("fillColor", e.target.value)
+                          }
                         />
                         <input
                           type="text"
@@ -128,10 +132,19 @@ const PolygonsPage = () => {
                           className={`${styles.hexInput} ${
                             errors.fillColor ? styles.inputError : ""
                           }`}
-                          {...register("fillColor")}
+                          {...register("fillColor", {
+                            pattern: {
+                              value: /^#[0-9A-F]{6}$/i,
+                              message: "Invalid color format",
+                            },
+                          })}
+                          onChange={(e) =>
+                            setValue("fillColor", e.target.value)
+                          }
                         />
                       </div>
-                      {errors.fillColor && (
+
+                      {errors?.fillColor && (
                         <span className={styles.errorMessage}>
                           {errors.fillColor.message}
                         </span>
@@ -152,6 +165,9 @@ const PolygonsPage = () => {
                             },
                           })}
                           className={styles.colorPicker}
+                          onChange={(e) =>
+                            setValue("borderColor", e.target.value)
+                          }
                         />
                         <input
                           type="text"
@@ -159,9 +175,18 @@ const PolygonsPage = () => {
                           className={`${styles.hexInput} ${
                             errors.borderColor ? styles.inputError : ""
                           }`}
-                          {...register("borderColor")}
+                          {...register("borderColor", {
+                            pattern: {
+                              value: /^#[0-9A-F]{6}$/i,
+                              message: "Invalid color format",
+                            },
+                          })}
+                          onChange={(e) =>
+                            setValue("borderColor", e.target.value)
+                          }
                         />
                       </div>
+
                       {errors.borderColor && (
                         <span className={styles.errorMessage}>
                           {errors.borderColor.message}

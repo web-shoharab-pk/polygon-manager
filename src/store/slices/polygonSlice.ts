@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 type Polygon = {
-  id: string;
+  id: number;
   coordinates: [number, number][];
   fillColor: string;
   borderColor: string;
@@ -32,9 +32,10 @@ export const polygonSlice = createSlice({
       const index = state.polygons.findIndex((p) => p.id === action.payload.id);
       if (index !== -1) state.polygons[index] = action.payload;
     },
-    deletePolygon: (state, action: PayloadAction<string>) => {
+    deletePolygon: (state, action: PayloadAction<number>) => {
       state.polygons = state.polygons.filter((p) => p.id !== action.payload);
     },
+
   },
 });
 

@@ -8,8 +8,13 @@
     "start": "next start",
     "lint": "next lint"
   },
+  "engines": {
+    "node": ">=20.10.0",
+    "npm": ">=10.2.3"
+  },
   "dependencies": {
     "@reduxjs/toolkit": "^2.5.1",
+    "@turf/turf": "^7.2.0",
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",
     "next": "15.1.6",
@@ -17,7 +22,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.54.2",
     "react-leaflet": "^5.0.0",
-    "react-leaflet-draw": "^0.20.4",
+    "react-leaflet-draw": "^0.20.6",
     "react-redux": "^9.2.0",
     "sass": "^1.83.4",
     "uuid": "^11.0.5"

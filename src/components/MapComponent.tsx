@@ -9,18 +9,18 @@ import {
   Polygon,
   TileLayer,
   Tooltip,
-  useMap,
 } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import { useDispatch, useSelector } from "react-redux";
-import { v4 as uuidv4 } from "uuid";
 import {
   addPolygon,
   deletePolygon,
   setPolygons,
+  updatePolygon,
 } from "../store/slices/polygonSlice";
 import { RootState } from "../store/store";
-import styles from "./MapComponent.module.scss";
+import styles from "./../styles/components/MapComponent.module.scss";
+import LocationFinder from "./LocationFinder";
 
 const MapComponent = () => {
   const dispatch = useDispatch();
@@ -59,102 +59,185 @@ const MapComponent = () => {
   };
 
   const calculatePolygonArea = (coordinates: number[][]) => {
+    // Handle case where coordinates are in {lat, lng} format
+    const formattedCoords = Array.isArray(coordinates[0])
+      ? coordinates
+      : coordinates.map((coord: any) => [coord.lat, coord.lng]);
+
     let area = 0;
-    for (let i = 0; i < coordinates.length; i++) {
-      const j = (i + 1) % coordinates.length;
-      area += coordinates[i][1] * coordinates[j][0];
-      area -= coordinates[j][1] * coordinates[i][0];
+    for (let i = 0; i < formattedCoords.length; i++) {
+      const j = (i + 1) % formattedCoords.length;
+      area += formattedCoords[i][1] * formattedCoords[j][0];
+      area -= formattedCoords[j][1] * formattedCoords[i][0];
     }
     area = Math.abs(area) / 2;
 
-    const R = 6371;
+    const R = 6371; // Earth's radius in km
+    const centerLat =
+      formattedCoords.reduce((sum, coord) => sum + coord[0], 0) /
+      formattedCoords.length;
+
     const areaInKm2 =
       area *
       (Math.PI / 180) *
       (Math.PI / 180) *
       R *
       R *
-      Math.cos((coordinates[0][0] * Math.PI) / 180);
+      Math.cos((centerLat * Math.PI) / 180);
 
     return areaInKm2.toFixed(4);
+  };
+
+  // Improved polygon intersection check using line segment intersection
+  const doLineSegmentsIntersect = (
+    p1: number[],
+    p2: number[],
+    p3: number[],
+    p4: number[]
+  ) => {
+    const ccw = (A: number[], B: number[], C: number[]) => {
+      return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0]);
+    };
+    return (
+      ccw(p1, p3, p4) !== ccw(p2, p3, p4) && ccw(p1, p2, p3) !== ccw(p1, p2, p4)
+    );
   };
 
   const checkPolygonIntersection = (
     newPolygon: number[][],
     existingPolygons: any[]
   ) => {
+    // Check each existing polygon
     for (const polygon of existingPolygons) {
-      // Use turf.js or a similar library for proper polygon intersection check
-      // This is a simplified check
-      const bounds1 = getBounds(newPolygon);
-      const bounds2 = getBounds(polygon.coordinates);
-      if (boundsIntersect(bounds1, bounds2)) {
+      const existingCoords = polygon.coordinates;
+
+      // Check each line segment of new polygon against each line segment of existing polygon
+      for (let i = 0; i < newPolygon.length; i++) {
+        const i2 = (i + 1) % newPolygon.length;
+        const line1Start = newPolygon[i];
+        const line1End = newPolygon[i2];
+
+        for (let j = 0; j < existingCoords.length; j++) {
+          const j2 = (j + 1) % existingCoords.length;
+          const line2Start = existingCoords[j];
+          const line2End = existingCoords[j2];
+
+          if (
+            doLineSegmentsIntersect(line1Start, line1End, line2Start, line2End)
+          ) {
+            return true;
+          }
+        }
+      }
+
+      // Check if one polygon is completely inside the other
+      const isPointInPolygon = (point: number[], polygon: number[][]) => {
+        let inside = false;
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+          const xi = polygon[i][0],
+            yi = polygon[i][1];
+          const xj = polygon[j][0],
+            yj = polygon[j][1];
+          const intersect =
+            yi > point[1] !== yj > point[1] &&
+            point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi;
+          if (intersect) inside = !inside;
+        }
+        return inside;
+      };
+
+      // Check if any point of new polygon is inside existing polygon
+      if (newPolygon.some((point) => isPointInPolygon(point, existingCoords))) {
+        return true;
+      }
+
+      // Check if any point of existing polygon is inside new polygon
+      if (
+        existingCoords.some((point: number[]) =>
+          isPointInPolygon(point, newPolygon)
+        )
+      ) {
         return true;
       }
     }
     return false;
   };
 
-  const getBounds = (coordinates: number[][]) => {
-    const lats = coordinates.map((c) => c[0]);
-    const lngs = coordinates.map((c) => c[1]);
-    return {
-      minLat: Math.min(...lats),
-      maxLat: Math.max(...lats),
-      minLng: Math.min(...lngs),
-      maxLng: Math.max(...lngs),
-    };
-  };
+  const _onCreate = (e: any) => {
+    const { layerType, layer } = e;
+    if (layerType === "polygon") {
+      const latlngs = layer
+        .getLatLngs()[0]
+        .map((latlng: any) => [latlng.lat, latlng.lng]);
 
-  const boundsIntersect = (bounds1: any, bounds2: any) => {
-    return !(
-      bounds1.minLat > bounds2.maxLat ||
-      bounds1.maxLat < bounds2.minLat ||
-      bounds1.minLng > bounds2.maxLng ||
-      bounds1.maxLng < bounds2.minLng
-    );
-  };
+      if (checkPolygonIntersection(latlngs, polygons)) {
+        setError("Error: Polygon overlaps with existing polygons!");
+        layer.remove();
+        setTimeout(() => setError(null), 3000);
+        return;
+      }
 
-  const handleCreate = (e: any) => {
-    const { layer } = e;
-    const latlngs = layer
-      .getLatLngs()[0]
-      .map((latlng: any) => [latlng.lat, latlng.lng]);
-
-    if (checkPolygonIntersection(latlngs, polygons)) {
-      setError("Error: New polygon intersects with existing polygons!");
-      layer.remove();
-      setTimeout(() => setError(null), 3000);
-      return;
-    }
-
-    dispatch(
-      addPolygon({
-        id: uuidv4(),
+      const polygonData = {
+        id: layer._leaflet_id,
         coordinates: latlngs,
         fillColor: "#FF0000",
         borderColor: "#000000",
         name: `Polygon ${polygons.length + 1}`,
         area: Number(calculatePolygonArea(latlngs)),
-      })
-    );
+      };
+      dispatch(addPolygon(polygonData));
+    }
   };
 
-  const handleDelete = (e: any) => {
-    e.layers.eachLayer((layer: any) => {
-      const layerLatLngs = layer
+  const _onEdited = (e: any) => {
+    const { layers } = e;
+
+    layers.eachLayer((layer: any) => {
+      const latlngs = layer
         .getLatLngs()[0]
         .map((latlng: any) => [latlng.lat, latlng.lng]);
 
-      const polygonToDelete = polygons.find(
-        (polygon) =>
-          JSON.stringify(polygon.coordinates) === JSON.stringify(layerLatLngs)
+      // Check for intersection with other polygons
+      const otherPolygons = polygons.filter((p) => p.id !== layer._leaflet_id);
+      if (checkPolygonIntersection(latlngs, otherPolygons)) {
+        setError("Error: Edited polygon overlaps with existing polygons!");
+        setTimeout(() => setError(null), 3000);
+        // Revert the edit by refreshing the map
+        window.location.reload();
+        return;
+      }
+
+      const polygonToUpdate = polygons.find(
+        (polygon) => polygon.id === layer._leaflet_id
       );
 
-      if (polygonToDelete) {
-        dispatch(deletePolygon(polygonToDelete.id));
+      if (polygonToUpdate) {
+        dispatch(
+          updatePolygon({
+            ...polygonToUpdate,
+            coordinates: latlngs,
+            area: Number(calculatePolygonArea(latlngs)),
+          })
+        );
       }
     });
+  };
+
+  const _onDeleted = (e: any) => {
+    try {
+      const { layers } = e;
+
+      layers.getLayers().forEach((layer: any) => {
+        const id = layer._leaflet_id;
+        if (id) {
+          dispatch(deletePolygon(id));
+        }
+      });
+    } catch (error) {
+      console.error("Error in _onDeleted:", error);
+      setError("Failed to delete polygon");
+      setTimeout(() => setError(null), 3000);
+    }
   };
 
   const exportPolygons = () => {
@@ -196,54 +279,10 @@ const MapComponent = () => {
     }
   };
 
-  const LocationFinder = () => {
-    const map = useMap();
-
-    const centerOnLocation = () => {
-      if (userLocation) {
-        map.setView(userLocation, 14);
-      } else {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const newLocation: [number, number] = [
-              position.coords.latitude,
-              position.coords.longitude,
-            ];
-            setUserLocation(newLocation);
-            map.setView(newLocation, 14);
-          },
-          (error) => {
-            setError("Unable to get location: " + error.message);
-            setTimeout(() => setError(null), 3000);
-          }
-        );
-      }
-    };
-
-    return (
-      <button
-        onClick={centerOnLocation}
-        style={{
-          position: "absolute",
-          top: "140px",
-          right: "10px",
-          zIndex: 1000,
-          padding: "5px",
-          backgroundColor: "white",
-          border: "2px solid rgba(0,0,0,0.2)",
-          borderRadius: "4px",
-          color: "black",
-        }}
-      >
-        📍 My Location
-      </button>
-    );
-  };
-
   const filteredPolygons = polygons.filter(
     (polygon) =>
       polygon?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      polygon?.id?.toLowerCase().includes(searchTerm.toLowerCase())
+      polygon?.id?.toString().toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -298,31 +337,28 @@ const MapComponent = () => {
         zoom={14}
         style={{ height: "100vh", width: "100%" }}
       >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <LocationFinder />
-
         <FeatureGroup>
           <EditControl
             position="topright"
-            onCreated={handleCreate}
-            onDeleted={handleDelete}
+            onCreated={_onCreate}
+            onDeleted={_onDeleted}
+            onEdited={_onEdited}
             draw={{
               rectangle: false,
+              polyline: false,
               circle: false,
               circlemarker: false,
               marker: false,
-              polyline: false,
-              polygon: {
-                allowIntersection: false,
-                drawError: {
-                  color: "#e1e100",
-                  message: "<strong>Polygon would intersect!</strong>",
-                },
-              },
             }}
           />
         </FeatureGroup>
-
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <LocationFinder
+          userLocation={userLocation || [48.351, 12.545]}
+          setUserLocation={setUserLocation}
+          error={error}
+          setError={setError}
+        />
         {filteredPolygons?.map((polygon) => (
           <Polygon
             key={polygon?.id}
@@ -353,7 +389,7 @@ const MapComponent = () => {
                 <div style={{ padding: "4px 8px" }}>
                   <strong>{polygon?.name}</strong>
                   <br />
-                  Area: {polygon.area.toFixed(2)} km²
+                  Area: {polygon?.area?.toFixed(2)} km²
                 </div>
               </Tooltip>
             </Marker>
